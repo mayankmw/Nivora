@@ -9,7 +9,12 @@ Multi-tenant student hostel management SaaS. Built incrementally with the owner,
 
 ## Current status
 
-Architecture approved on 2026-10-09. No code exists yet. Next is Phase 1, Step 1 (workspace scaffold), which starts only when the owner sends the Step 1 prompt. Update this section as steps are completed.
+Work happens on the `development` branch.
+
+- Phase 1, Step 1 (workspace scaffold) is done: npm workspace with a Vite + React `frontend`, a NestJS `backend` exposing `GET /api/v1/health`, and shared formatting, lint, typecheck, test and build scripts.
+- Not yet built: environment configuration, Docker Postgres, Prisma, error handling and logging, Tailwind and Shadcn UI, and every feature module.
+
+Update this section as steps are completed.
 
 ## How to work
 
@@ -40,8 +45,26 @@ Suggested Git commit
 - Frontend: React, Vite, TypeScript, Tailwind CSS, Shadcn UI, Zustand, React Router, TanStack Query, Recharts, Framer Motion.
 - Backend: NestJS, TypeScript, PostgreSQL, Prisma. Modular monolith, no microservices.
 - Realtime: Socket.IO. Payments: Razorpay. Files: local disk now, S3-compatible later.
-- Monorepo: pnpm workspace with `apps/api`, `apps/web`, `packages/shared`.
+- Monorepo: npm workspaces with `frontend` and `backend` (no pnpm); `packages/shared` is added when first needed.
+- Tooling: oxlint for linting, Vitest for tests, Prettier for formatting (config at the repo root).
 - Local: frontend `http://localhost:5173`, backend `http://localhost:3000`, PostgreSQL in Docker on `localhost:5432`.
+
+## Commands
+
+Run from the repo root. Requires Node 24 or newer.
+
+```text
+npm install          install dependencies
+npm run dev          run frontend (5173) and backend (3000) together
+npm run lint         oxlint in both apps
+npm run typecheck    TypeScript in both apps
+npm test             backend unit tests
+npm run test:e2e     backend e2e tests
+npm run build        production build of both apps
+npm run format       Prettier write; npm run format:check to verify
+```
+
+Install a package into one app with `npm install <pkg> --workspace @nivora/frontend` (or `@nivora/backend`).
 
 ## Non-negotiables
 

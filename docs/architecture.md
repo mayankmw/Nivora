@@ -2,20 +2,23 @@
 
 Approved architecture for Nivora, a multi-tenant student hostel management platform. Product requirements are in [requirements.md](requirements.md). This document records how the system is built and why.
 
-Status: architecture approved on 2026-10-09. No implementation exists yet. Step 1 (workspace scaffold) has not started.
+Status: architecture approved on 2026-10-09. Step 1 (workspace scaffold) is done; see [CLAUDE.md](../CLAUDE.md) for current progress.
 
 ## Decisions log
 
-| # | Decision | Reason |
-|---|---|---|
-| 1 | The project is named **Nivora** (an earlier draft of the brief said HostelOS). | Owner's choice. |
-| 2 | `buildings`, `floors`, `rooms` and `beds` live inside one `hostels` NestJS module, each with its own controller and service. | They form one aggregate with no independent lifecycle; four modules would import each other circularly. |
-| 3 | A separate `allocations` module owns bed assignment, transfer and release. | It is used by admissions, transfers and check-out, and is where race conditions occur. |
-| 4 | One user belongs to exactly one organization and has exactly one role. Email is unique across the platform. | Simplest login and permission model. A person working for two organizations needs two accounts. Can migrate to a membership table later. |
-| 5 | Tenant isolation is enforced in the application layer. PostgreSQL row-level security (RLS) is deferred. | RLS complicates Prisma connection handling. Every table carries `organizationId`, so RLS can be added later without redesign. |
-| 6 | PostgreSQL runs in Docker Compose for local development. | Owner's choice. |
-| 7 | pnpm workspace monorepo, no Turborepo or Nx. | Enough for two apps and one package. |
-| 8 | No Redis, queue or microservices. Scheduled work uses `@nestjs/schedule` with idempotent jobs. | Avoids infrastructure until there is more than one API instance. |
+| #   | Decision                                                                                                                                    | Reason                                                                                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The project is named **Nivora** (an earlier draft of the brief said HostelOS).                                                              | Owner's choice.                                                                                                                          |
+| 2   | `buildings`, `floors`, `rooms` and `beds` live inside one `hostels` NestJS module, each with its own controller and service.                | They form one aggregate with no independent lifecycle; four modules would import each other circularly.                                  |
+| 3   | A separate `allocations` module owns bed assignment, transfer and release.                                                                  | It is used by admissions, transfers and check-out, and is where race conditions occur.                                                   |
+| 4   | One user belongs to exactly one organization and has exactly one role. Email is unique across the platform.                                 | Simplest login and permission model. A person working for two organizations needs two accounts. Can migrate to a membership table later. |
+| 5   | Tenant isolation is enforced in the application layer. PostgreSQL row-level security (RLS) is deferred.                                     | RLS complicates Prisma connection handling. Every table carries `organizationId`, so RLS can be added later without redesign.            |
+| 6   | PostgreSQL runs in Docker Compose for local development.                                                                                    | Owner's choice.                                                                                                                          |
+| 7   | npm workspaces monorepo, no pnpm, Turborepo or Nx.                                                                                          | Owner's choice (pnpm was used briefly in Step 1 and removed). npm ships with Node, so there is nothing extra to install.                 |
+| 8   | No Redis, queue or microservices. Scheduled work uses `@nestjs/schedule` with idempotent jobs.                                              | Avoids infrastructure until there is more than one API instance.                                                                         |
+| 9   | The apps live in top-level `frontend/` and `backend/` folders, not `apps/web` and `apps/api`. `packages/shared` is added when first needed. | Owner's Step 1 prompt asked for this layout.                                                                                             |
+| 10  | Node 24 or newer is required (`engines` in the root `package.json`, `.nvmrc`).                                                              | The Nest 12 CLI crashes on Node 22.13.0; the owner upgraded the machine to Node 24.21.0.                                                 |
+| 11  | Linting uses oxlint and tests use Vitest, in both apps.                                                                                     | These are what the current Vite and Nest scaffolds generate; no reason to swap them.                                                     |
 
 Do not change these silently. If one needs to change, explain why and get approval first.
 
@@ -23,11 +26,11 @@ Do not change these silently. If one needs to change, explain why and get approv
 
 One React app, one API and one database serve three audiences:
 
-| Surface | Roles | Data scope |
-|---|---|---|
-| Platform console | SUPER_ADMIN | All organizations |
-| Operations app | HOSTEL_ADMIN, WARDEN, ACCOUNTANT | One organization; wardens and accountants limited to assigned hostels |
-| Student portal | STUDENT | Own records only |
+| Surface          | Roles                            | Data scope                                                            |
+| ---------------- | -------------------------------- | --------------------------------------------------------------------- |
+| Platform console | SUPER_ADMIN                      | All organizations                                                     |
+| Operations app   | HOSTEL_ADMIN, WARDEN, ACCOUNTANT | One organization; wardens and accountants limited to assigned hostels |
+| Student portal   | STUDENT                          | Own records only                                                      |
 
 The core object is the **stay**: admission → bed allocation → check-in → monthly billing → check-out → deposit settlement. Complaints, leave, outpass and visitors attach to a student with an active stay.
 
@@ -50,15 +53,14 @@ Local addresses: frontend `http://localhost:5173`, backend `http://localhost:300
 
 ```text
 nivora/
-├── apps/
-│   ├── api/              # NestJS
-│   └── web/              # React + Vite
+├── frontend/             # React + Vite
+├── backend/              # NestJS
 ├── packages/
-│   └── shared/           # enums, permission keys, API types (no logic)
+│   └── shared/           # enums, permission keys, API types (no logic); added when first needed
 ├── docs/
-├── docker-compose.yml    # Postgres
-├── .env.example
-└── pnpm-workspace.yaml
+├── docker-compose.yml    # Postgres; added with the database step
+├── package.json          # npm workspaces and shared scripts
+└── package-lock.json
 ```
 
 `packages/shared` holds no logic and no validation. The backend validates with class-validator DTOs; the frontend uses zod with react-hook-form.
@@ -66,7 +68,7 @@ nivora/
 ## 4. Frontend structure
 
 ```text
-apps/web/src/
+frontend/src/
 ├── app/           # providers, router, route guards, layouts
 ├── features/      # one folder per domain (auth, hostels, students, billing, complaints...)
 │   └── <feature>/ #   api.ts · components/ · pages/ · schemas.ts
@@ -83,7 +85,7 @@ apps/web/src/
 ## 5. Backend structure
 
 ```text
-apps/api/
+backend/
 ├── prisma/               # schema, migrations, seed
 └── src/
     ├── config/           # validated environment
@@ -159,12 +161,12 @@ One shared database and schema, with `organizationId` on every tenant-owned tabl
 
 ### Known gaps and their guards
 
-| Gap | Guard |
-|---|---|
-| Nested writes and includes are not intercepted by the extension | Composite foreign keys `(organizationId, id)`, so a row cannot reference another tenant's parent |
-| Raw SQL bypasses the filter | Allowed only inside repositories, with the organization passed explicitly |
-| Scheduled jobs and webhooks have no logged-in user | They run inside an explicit "run as organization X" wrapper; the Razorpay webhook takes the organization from the stored `GatewayOrder` |
-| Login and platform routes legitimately cross tenants | A separate unscoped client, injectable only in the `auth` and platform modules |
+| Gap                                                             | Guard                                                                                                                                   |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Nested writes and includes are not intercepted by the extension | Composite foreign keys `(organizationId, id)`, so a row cannot reference another tenant's parent                                        |
+| Raw SQL bypasses the filter                                     | Allowed only inside repositories, with the organization passed explicitly                                                               |
+| Scheduled jobs and webhooks have no logged-in user              | They run inside an explicit "run as organization X" wrapper; the Razorpay webhook takes the organization from the stored `GatewayOrder` |
+| Login and platform routes legitimately cross tenants            | A separate unscoped client, injectable only in the `auth` and platform modules                                                          |
 
 ### Other boundaries
 
@@ -238,28 +240,28 @@ Response shapes:
 
 ## 11. MVP scope
 
-| In | Later |
-|---|---|
-| Auth, invitations, RBAC, tenant isolation, audit log | Google/OTP login, 2FA |
-| Hostel structure and occupancy view | Mess module |
-| Students, admissions, documents, allocation, check-in/out | Charts, reports, export |
+| In                                                                                            | Later                                          |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Auth, invitations, RBAC, tenant isolation, audit log                                          | Google/OTP login, 2FA                          |
+| Hostel structure and occupancy view                                                           | Mess module                                    |
+| Students, admissions, documents, allocation, check-in/out                                     | Charts, reports, export                        |
 | Fee structures, invoices, manual and Razorpay payments, receipts, refunds, deposit settlement | Subscription plans, usage limits, SaaS billing |
-| Complaints, leave, outpass, visitors, notices, notifications | S3 storage, row-level security |
-| One simple dashboard per role | Full super-admin dashboard |
+| Complaints, leave, outpass, visitors, notices, notifications                                  | S3 storage, row-level security                 |
+| One simple dashboard per role                                                                 | Full super-admin dashboard                     |
 
 ## 12. Development phases
 
-| Phase | Content |
-|---|---|
-| 1. Foundation | Workspace, NestJS, Docker Postgres, Prisma, config, error handling, logging, app shell |
-| 2. Auth and tenancy | Organizations, users, login, refresh, invitations, RBAC, tenant client, audit service |
-| 3. Hostel structure | Hostels through beds, occupancy grid |
-| 4. Students | File storage, profiles, admissions, documents, allocation, check-in/out |
-| 5. Finance | Fee structures, invoices, payments, Razorpay, receipts, refunds, dues |
-| 6. Operations | Realtime setup, complaints, leave, outpass, visitors, notices, notifications |
-| 7. Mess | Menu, meal tracking, charges, feedback |
-| 8. Analytics | Charts, reports, export |
-| 9. SaaS | Plans, limits, platform billing, super-admin dashboard |
+| Phase               | Content                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| 1. Foundation       | Workspace, NestJS, Docker Postgres, Prisma, config, error handling, logging, app shell |
+| 2. Auth and tenancy | Organizations, users, login, refresh, invitations, RBAC, tenant client, audit service  |
+| 3. Hostel structure | Hostels through beds, occupancy grid                                                   |
+| 4. Students         | File storage, profiles, admissions, documents, allocation, check-in/out                |
+| 5. Finance          | Fee structures, invoices, payments, Razorpay, receipts, refunds, dues                  |
+| 6. Operations       | Realtime setup, complaints, leave, outpass, visitors, notices, notifications           |
+| 7. Mess             | Menu, meal tracking, charges, feedback                                                 |
+| 8. Analytics        | Charts, reports, export                                                                |
+| 9. SaaS             | Plans, limits, platform billing, super-admin dashboard                                 |
 
 Differences from the original roadmap: the audit service is built in Phase 2 and file storage at the start of Phase 4, so later modules use them from the start; each phase adds its tiles to a simple role dashboard, so the app always has a landing page.
 
@@ -286,4 +288,7 @@ Planned Phase 1 commits:
 
 ## Local environment notes
 
-Checked on 2026-10-08: Node 22.13.0, Docker 29.7.2 and Compose v5.5.0 are installed. pnpm is not installed; `corepack enable pnpm` sets it up. Nothing was listening on port 5432.
+Checked on 2026-10-09:
+
+- Node 24.21.0 and npm 11.19.0 are installed.
+- Docker 29.7.2 and Compose v5.5.0 are installed. Nothing was listening on port 5432.

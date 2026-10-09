@@ -22,13 +22,13 @@ It must support multiple organizations, each with multiple hostels.
 
 Only these five roles exist. The backend must enforce permissions; hiding UI is not enough.
 
-| Role | Manages |
-|---|---|
-| SUPER_ADMIN | Organizations, subscription plans, platform settings, system-wide analytics |
-| HOSTEL_ADMIN | Students, hostels, buildings, floors, rooms, beds, fees, payments, complaints, notices, reports, staff and wardens |
-| WARDEN | Student operations, room and bed information, leave requests, outpass requests, visitors, complaints, notices, check-in and check-out, daily activity |
-| ACCOUNTANT | Fee structures, invoices, payments, outstanding dues, receipts, refunds, financial reports |
-| STUDENT | Own data only: view profile, room and bed, fees, receipts and notices; make payments; raise complaints; submit leave and outpass requests; manage visitor requests |
+| Role         | Manages                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| SUPER_ADMIN  | Organizations, subscription plans, platform settings, system-wide analytics                                                                                        |
+| HOSTEL_ADMIN | Students, hostels, buildings, floors, rooms, beds, fees, payments, complaints, notices, reports, staff and wardens                                                 |
+| WARDEN       | Student operations, room and bed information, leave requests, outpass requests, visitors, complaints, notices, check-in and check-out, daily activity              |
+| ACCOUNTANT   | Fee structures, invoices, payments, outstanding dues, receipts, refunds, financial reports                                                                         |
+| STUDENT      | Own data only: view profile, room and bed, fees, receipts and notices; make payments; raise complaints; submit leave and outpass requests; manage visitor requests |
 
 ## Hostel structure
 
@@ -141,16 +141,16 @@ A modern SaaS feel, inspired by Linear, Stripe Dashboard, Notion and modern prop
 
 ## Original roadmap
 
-| Phase | Items |
-|---|---|
-| 1. Foundation | Project architecture, repository structure, frontend setup, NestJS setup, PostgreSQL setup, Prisma setup, environment configuration, error handling, logging, API structure |
-| 2. Authentication and users | Organizations, users, roles, authentication, JWT and refresh tokens, RBAC, tenant isolation |
-| 3. Hostel structure | Hostels, buildings, floors, rooms, beds, occupancy |
-| 4. Students | Profiles, admissions, documents, bed allocation, check-in, check-out |
-| 5. Finance | Fee structures, monthly invoices, payments, Razorpay, payment verification, receipts, refunds, outstanding dues |
-| 6. Operations | Complaints, leave, outpass, visitors, notices, notifications |
-| 7. Mess | Menu, meal tracking, mess charges, feedback |
-| 8. Analytics | Four role dashboards, occupancy, revenue and complaint analytics, reports, export |
-| 9. SaaS | Subscription plans, organization settings, usage limits, SaaS billing, super-admin dashboard |
+| Phase                       | Items                                                                                                                                                                       |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Foundation               | Project architecture, repository structure, frontend setup, NestJS setup, PostgreSQL setup, Prisma setup, environment configuration, error handling, logging, API structure |
+| 2. Authentication and users | Organizations, users, roles, authentication, JWT and refresh tokens, RBAC, tenant isolation                                                                                 |
+| 3. Hostel structure         | Hostels, buildings, floors, rooms, beds, occupancy                                                                                                                          |
+| 4. Students                 | Profiles, admissions, documents, bed allocation, check-in, check-out                                                                                                        |
+| 5. Finance                  | Fee structures, monthly invoices, payments, Razorpay, payment verification, receipts, refunds, outstanding dues                                                             |
+| 6. Operations               | Complaints, leave, outpass, visitors, notices, notifications                                                                                                                |
+| 7. Mess                     | Menu, meal tracking, mess charges, feedback                                                                                                                                 |
+| 8. Analytics                | Four role dashboards, occupancy, revenue and complaint analytics, reports, export                                                                                           |
+| 9. SaaS                     | Subscription plans, organization settings, usage limits, SaaS billing, super-admin dashboard                                                                                |
 
 The approved adjustments to this roadmap are in [architecture.md](architecture.md), section 12.
