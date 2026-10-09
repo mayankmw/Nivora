@@ -13,7 +13,8 @@ Work happens on the `development` branch.
 
 - Step 1 (workspace scaffold) is done: npm workspaces with a Vite + React `frontend`, a NestJS `backend` exposing `GET /api/v1/health`, and shared formatting, lint, typecheck, test and build scripts.
 - Step 2 (frontend foundation) is done: Tailwind CSS 4, Shadcn UI, React Router, Zustand and TanStack Query are wired up, with an app shell (collapsible sidebar, header with breadcrumb, light/dark/system theme, mobile drawer). Every sidebar entry routes to a placeholder page.
-- Not yet built: backend environment configuration, Docker Postgres, Prisma, error handling and logging, the API client, authentication, and every feature module.
+- Step 3 (backend foundation) is done: validated environment config (`backend/.env`), global validation pipe, exception filter and response envelope, request IDs and request logging, URI versioning (`/api/v1`), CORS.
+- Not yet built: Docker Postgres, Prisma, the frontend API client, authentication, and every feature module.
 
 Update this section as steps are completed.
 
@@ -73,6 +74,8 @@ Install a package into one app with `npm install <pkg> --workspace @nivora/front
 - Never accept an organization ID from the client. Derive it from the authenticated session.
 - Every tenant-owned table carries `organizationId`; all access goes through the tenant-scoped Prisma client.
 - Business logic lives in services, not controllers. Validate all input with DTOs.
+- Controllers return plain values (the interceptor adds the `data` envelope) and signal errors with `AppException` or Nest HTTP exceptions; never build error JSON by hand.
+- Read settings through the injected `appConfig`, never `process.env` directly. New variables go in `backend/src/config/env.validation.ts` and `backend/.env.example`.
 - Use transactions for allocation and financial operations.
 - Money is stored as integer paise. Financial records are never deleted or edited after issue.
 - Never store plaintext passwords or card data. Never serve documents from a public path.

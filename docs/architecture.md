@@ -6,21 +6,24 @@ Status: architecture approved on 2026-10-09. Step 1 (workspace scaffold) is done
 
 ## Decisions log
 
-| #   | Decision                                                                                                                                    | Reason                                                                                                                                   |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | The project is named **Nivora** (an earlier draft of the brief said HostelOS).                                                              | Owner's choice.                                                                                                                          |
-| 2   | `buildings`, `floors`, `rooms` and `beds` live inside one `hostels` NestJS module, each with its own controller and service.                | They form one aggregate with no independent lifecycle; four modules would import each other circularly.                                  |
-| 3   | A separate `allocations` module owns bed assignment, transfer and release.                                                                  | It is used by admissions, transfers and check-out, and is where race conditions occur.                                                   |
-| 4   | One user belongs to exactly one organization and has exactly one role. Email is unique across the platform.                                 | Simplest login and permission model. A person working for two organizations needs two accounts. Can migrate to a membership table later. |
-| 5   | Tenant isolation is enforced in the application layer. PostgreSQL row-level security (RLS) is deferred.                                     | RLS complicates Prisma connection handling. Every table carries `organizationId`, so RLS can be added later without redesign.            |
-| 6   | PostgreSQL runs in Docker Compose for local development.                                                                                    | Owner's choice.                                                                                                                          |
-| 7   | npm workspaces monorepo, no pnpm, Turborepo or Nx.                                                                                          | Owner's choice (pnpm was used briefly in Step 1 and removed). npm ships with Node, so there is nothing extra to install.                 |
-| 8   | No Redis, queue or microservices. Scheduled work uses `@nestjs/schedule` with idempotent jobs.                                              | Avoids infrastructure until there is more than one API instance.                                                                         |
-| 9   | The apps live in top-level `frontend/` and `backend/` folders, not `apps/web` and `apps/api`. `packages/shared` is added when first needed. | Owner's Step 1 prompt asked for this layout.                                                                                             |
-| 10  | Node 24 or newer is required (`engines` in the root `package.json`, `.nvmrc`).                                                              | The Nest 12 CLI crashes on Node 22.13.0; the owner upgraded the machine to Node 24.21.0.                                                 |
-| 11  | Linting uses oxlint and tests use Vitest, in both apps.                                                                                     | These are what the current Vite and Nest scaffolds generate; no reason to swap them.                                                     |
-| 12  | Shadcn UI uses the Radix base with the Nova preset (neutral colours, Geist font, Lucide icons), on Tailwind CSS 4.                          | Radix is the API the owner already knows (`asChild`); Nova is the CLI's current default look.                                            |
-| 13  | The sidebar and router are both generated from one config, `frontend/src/app/navigation.ts`.                                                | One place to add a module; role-based filtering attaches there when authentication lands.                                                |
+| #   | Decision                                                                                                                                                             | Reason                                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | The project is named **Nivora** (an earlier draft of the brief said HostelOS).                                                                                       | Owner's choice.                                                                                                                          |
+| 2   | `buildings`, `floors`, `rooms` and `beds` live inside one `hostels` NestJS module, each with its own controller and service.                                         | They form one aggregate with no independent lifecycle; four modules would import each other circularly.                                  |
+| 3   | A separate `allocations` module owns bed assignment, transfer and release.                                                                                           | It is used by admissions, transfers and check-out, and is where race conditions occur.                                                   |
+| 4   | One user belongs to exactly one organization and has exactly one role. Email is unique across the platform.                                                          | Simplest login and permission model. A person working for two organizations needs two accounts. Can migrate to a membership table later. |
+| 5   | Tenant isolation is enforced in the application layer. PostgreSQL row-level security (RLS) is deferred.                                                              | RLS complicates Prisma connection handling. Every table carries `organizationId`, so RLS can be added later without redesign.            |
+| 6   | PostgreSQL runs in Docker Compose for local development.                                                                                                             | Owner's choice.                                                                                                                          |
+| 7   | npm workspaces monorepo, no pnpm, Turborepo or Nx.                                                                                                                   | Owner's choice (pnpm was used briefly in Step 1 and removed). npm ships with Node, so there is nothing extra to install.                 |
+| 8   | No Redis, queue or microservices. Scheduled work uses `@nestjs/schedule` with idempotent jobs.                                                                       | Avoids infrastructure until there is more than one API instance.                                                                         |
+| 9   | The apps live in top-level `frontend/` and `backend/` folders, not `apps/web` and `apps/api`. `packages/shared` is added when first needed.                          | Owner's Step 1 prompt asked for this layout.                                                                                             |
+| 10  | Node 24 or newer is required (`engines` in the root `package.json`, `.nvmrc`).                                                                                       | The Nest 12 CLI crashes on Node 22.13.0; the owner upgraded the machine to Node 24.21.0.                                                 |
+| 11  | Linting uses oxlint and tests use Vitest, in both apps.                                                                                                              | These are what the current Vite and Nest scaffolds generate; no reason to swap them.                                                     |
+| 12  | Shadcn UI uses the Radix base with the Nova preset (neutral colours, Geist font, Lucide icons), on Tailwind CSS 4.                                                   | Radix is the API the owner already knows (`asChild`); Nova is the CLI's current default look.                                            |
+| 13  | The sidebar and router are both generated from one config, `frontend/src/app/navigation.ts`.                                                                         | One place to add a module; role-based filtering attaches there when authentication lands.                                                |
+| 14  | Logging uses Nest's built-in `ConsoleLogger`: readable lines in development, one JSON object per line in production. No pino or winston.                             | Enough for now and adds no dependency. Swap in pino if log volume or structured fields demand it.                                        |
+| 15  | Environment variables are validated at startup with class-validator (`backend/src/config/env.validation.ts`); `appConfig` is the only code that reads `process.env`. | Reuses the validation library the DTOs already need, and a bad deployment fails immediately with a list of what to fix.                  |
+| 16  | API versioning uses Nest's URI versioning with the global prefix `api` and default version `1`, giving `/api/v1/...`.                                                | A later breaking change can add `@Version('2')` to one handler without touching the rest.                                                |
 
 Do not change these silently. If one needs to change, explain why and get approval first.
 
@@ -93,9 +96,14 @@ frontend/src/
 ```text
 backend/
 ├── prisma/               # schema, migrations, seed
+├── .env.example          # every environment variable, documented
 └── src/
-    ├── config/           # validated environment
-    ├── common/           # guards, decorators, filters, interceptors, pagination
+    ├── main.ts           # bootstrap: logger, configureApp, listen
+    ├── app.setup.ts      # prefix, versioning, CORS, middleware (shared with e2e tests)
+    ├── config/           # env validation and the typed appConfig
+    ├── common/           # CommonModule: validation pipe, response envelope, exception filter;
+    │                     #   also errors, middleware, logging; later guards and decorators
+    ├── health/           # GET /api/v1/health
     ├── infra/            # prisma, storage, audit, realtime
     └── modules/
         ├── auth · users · organizations
@@ -235,6 +243,10 @@ Response shapes:
 
 - Lists are paginated, filterable and sortable.
 - State changes are explicit action endpoints such as `POST /leave-requests/:id/approve`, not edits to a status field.
+- Controllers return plain values; `ResponseEnvelopeInterceptor` wraps them in `data`. Return a `PaginatedResult` to add `meta`.
+- Throw `AppException(code, message, status)` for errors a client should branch on. Plain Nest HTTP exceptions get a code derived from their status (`NOT_FOUND`, `FORBIDDEN`); anything else becomes a generic 500 and is logged with its stack.
+- Validation failures use the code `VALIDATION_FAILED` with one `details` entry per field. Unknown request properties are rejected.
+- Every response carries an `x-request-id` header, repeated as `requestId` in error bodies and in the request log line.
 - Student self-service goes through `/me/*`, which removes ID-guessing bugs for students.
 
 ## 10. Cross-cutting services
