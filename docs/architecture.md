@@ -19,6 +19,8 @@ Status: architecture approved on 2026-10-09. Step 1 (workspace scaffold) is done
 | 9   | The apps live in top-level `frontend/` and `backend/` folders, not `apps/web` and `apps/api`. `packages/shared` is added when first needed. | Owner's Step 1 prompt asked for this layout.                                                                                             |
 | 10  | Node 24 or newer is required (`engines` in the root `package.json`, `.nvmrc`).                                                              | The Nest 12 CLI crashes on Node 22.13.0; the owner upgraded the machine to Node 24.21.0.                                                 |
 | 11  | Linting uses oxlint and tests use Vitest, in both apps.                                                                                     | These are what the current Vite and Nest scaffolds generate; no reason to swap them.                                                     |
+| 12  | Shadcn UI uses the Radix base with the Nova preset (neutral colours, Geist font, Lucide icons), on Tailwind CSS 4.                          | Radix is the API the owner already knows (`asChild`); Nova is the CLI's current default look.                                            |
+| 13  | The sidebar and router are both generated from one config, `frontend/src/app/navigation.ts`.                                                | One place to add a module; role-based filtering attaches there when authentication lands.                                                |
 
 Do not change these silently. If one needs to change, explain why and get approval first.
 
@@ -69,14 +71,18 @@ nivora/
 
 ```text
 frontend/src/
-├── app/           # providers, router, route guards, layouts
+├── app/           # app.tsx, providers, router, navigation config
+│   ├── layouts/   #   AppLayout (sidebar + header + routed page)
+│   └── pages/     #   cross-cutting pages: placeholder, not found
 ├── features/      # one folder per domain (auth, hostels, students, billing, complaints...)
 │   └── <feature>/ #   api.ts · components/ · pages/ · schemas.ts
 ├── components/
-│   ├── ui/        # shadcn primitives
-│   └── shared/    # DataTable, PageHeader, StatCard, CommandPalette
-├── lib/           # API client, socket client, query client
-└── stores/        # Zustand: auth session and UI preferences only
+│   ├── ui/        # shadcn primitives (generated; edit sparingly)
+│   ├── layout/    # AppSidebar, AppHeader, AppBreadcrumb, ThemeToggle
+│   └── shared/    # PageHeader, EmptyState; later DataTable, StatCard, CommandPalette
+├── hooks/         # useThemeSync, useRouteTitle, useIsMobile
+├── lib/           # query client, utils; later API client and socket client
+└── stores/        # Zustand: theme, sidebar; later the auth session
 ```
 
 - TanStack Query owns all server data. Zustand never caches API data.

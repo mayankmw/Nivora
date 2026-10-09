@@ -19,6 +19,7 @@ npm-debug.log*
 
 # Local tooling
 .claude/
+.playwright-mcp/
 *.local
 
 # Editors and OS

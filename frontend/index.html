@@ -5,6 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Nivora</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a light/dark flash.
+      // Mirrors stores/theme-store.ts (same storage key and persisted shape).
+      (function () {
+        try {
+          var saved = JSON.parse(localStorage.getItem('nivora-theme') || '{}');
+          var theme = (saved.state && saved.state.theme) || 'system';
+          var dark =
+            theme === 'dark' ||
+            (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (error) {
+          // Storage unavailable: fall back to the light theme.
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

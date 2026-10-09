@@ -11,8 +11,9 @@ Multi-tenant student hostel management SaaS. Built incrementally with the owner,
 
 Work happens on the `development` branch.
 
-- Phase 1, Step 1 (workspace scaffold) is done: npm workspace with a Vite + React `frontend`, a NestJS `backend` exposing `GET /api/v1/health`, and shared formatting, lint, typecheck, test and build scripts.
-- Not yet built: environment configuration, Docker Postgres, Prisma, error handling and logging, Tailwind and Shadcn UI, and every feature module.
+- Step 1 (workspace scaffold) is done: npm workspaces with a Vite + React `frontend`, a NestJS `backend` exposing `GET /api/v1/health`, and shared formatting, lint, typecheck, test and build scripts.
+- Step 2 (frontend foundation) is done: Tailwind CSS 4, Shadcn UI, React Router, Zustand and TanStack Query are wired up, with an app shell (collapsible sidebar, header with breadcrumb, light/dark/system theme, mobile drawer). Every sidebar entry routes to a placeholder page.
+- Not yet built: backend environment configuration, Docker Postgres, Prisma, error handling and logging, the API client, authentication, and every feature module.
 
 Update this section as steps are completed.
 
@@ -47,6 +48,7 @@ Suggested Git commit
 - Realtime: Socket.IO. Payments: Razorpay. Files: local disk now, S3-compatible later.
 - Monorepo: npm workspaces with `frontend` and `backend` (no pnpm); `packages/shared` is added when first needed.
 - Tooling: oxlint for linting, Vitest for tests, Prettier for formatting (config at the repo root).
+- Shadcn UI: add components from the `frontend` folder with `npx shadcn@latest add <name>`, then run `npm run format`. Files in `frontend/src/components/ui` are generated.
 - Local: frontend `http://localhost:5173`, backend `http://localhost:3000`, PostgreSQL in Docker on `localhost:5432`.
 
 ## Commands
